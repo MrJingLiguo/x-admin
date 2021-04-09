@@ -28,6 +28,8 @@
     <script src="../../js/element.js"></script>
 
     <script>
+        let ROOT_URL = "http://localhost:9999";
+
         new Vue({
             el: "#wrapper",
             data: {
@@ -50,10 +52,13 @@
                         return;
                     }
                     $.ajax({
-                        url: "/api/user/register",
+                        url: ROOT_URL + "/api/user/register",
                         type: "POST",
                         contentType: "application/json",
-                        data: JSON.stringify(this.user)
+                        data: JSON.stringify(this.user),
+                        beforeSend: (request) => {
+                            request.setRequestHeader("token", this.user.token);
+                        }
                     }).then(res => {
                         if (res.code === '0') {
                             this.$message({
@@ -62,7 +67,7 @@
                             });
                             sessionStorage.setItem("user", JSON.stringify(res.data));
                             setTimeout(() => {
-                                location.href= "/page/end/login.html"
+                                location.href= "login.html"
                             }, 1000)
                         } else {
                             this.$message({

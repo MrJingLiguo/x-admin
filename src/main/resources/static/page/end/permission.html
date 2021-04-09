@@ -13,14 +13,14 @@
             <div style="background-color: black; height: 60px; line-height: 60px; text-align: center;
                 color: white; font-size: 20px;">
                 <transition name="el-fade-in-linear">
-                    <span name="fade" v-show="!isCollapse"><a href="/page/end/index.html">X-Admin</a></span>
+                    <span name="fade" v-show="!isCollapse"><a href="index.html">X-Admin</a></span>
                 </transition>
             </div>
             <el-menu :default-openeds="['1']" style="border: none;" background-color="black" text-color="#fff"
                      active-text-color="#ffd04b"
                      default-active="permission"
                      class="el-menu-vertical-demo" :collapse="isCollapse">
-                <a href="/page/end/index.html">
+                <a href="index.html">
                     <el-menu-item index="home">
                         <i class="el-icon-data-line"></i>
                         <span slot="title">首页</span>
@@ -50,10 +50,10 @@
                     <el-col :span="2" :offset="21" style="text-align: right">
                         <span style="color: white; margin-right: 10px">{{user.username}}</span>
                         <el-dropdown>
-                            <img :src=`/files/${user.avatar}`
+                            <img :src=`http://localhost:9999/files/${user.avatar}`
                                  style="width: 40px; height: 40px; margin-right: 10px; border-radius: 50%">
                             <el-dropdown-menu slot="dropdown">
-                                <a href="/page/end/person.html"
+                                <a href="person.html"
                                    style="display:inline-block; padding: 5px 0; width: 100px; text-align: center; color: black">个人信息</a>
                                 <a @click="logout" href="#"
                                    style="display:block; width: 100px;  text-align: center; color: black">退出</a>
@@ -134,8 +134,10 @@
 <script src="../../js/base.js"></script>
 
 <script>
+    let ROOT_URL = "http://localhost:9999";
 
     let urlBase = ROOT_URL + "/api/permission/";
+
     new Vue({
         el: "#wrapper",
         data: {
@@ -170,7 +172,7 @@
                     }
                 }).then(res => {
                     sessionStorage.removeItem("user");
-                    location.href = "/page/end/login.html";
+                    location.href = "login.html";
                 })
             },
             loadTable() {
@@ -233,7 +235,10 @@
             del(id) {
                 $.ajax({
                     url: urlBase + id,
-                    type: "delete"
+                    type: "delete",
+                    beforeSend: (request) => {
+                        request.setRequestHeader("token", this.user.token);
+                    }
                 }).then(res => {
                     if (res.code === '0') {
                         this.$message({

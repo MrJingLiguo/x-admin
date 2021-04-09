@@ -46,8 +46,7 @@ public class UserController {
     public Result<User> login(@RequestBody User user) {
         User res = userService.login(user);
         // 生成token
-        String token = JWT.create().withAudience(res.getUsername()).withExpiresAt(DateUtil.offset(new Date(), DateField.MINUTE, EXPIRE_MIN))
-                .sign(Algorithm.HMAC256(res.getPassword()));
+        String token = JWT.create().withAudience(res.getUsername()).sign(Algorithm.HMAC256(res.getPassword()));
         res.setToken(token);
 
         // 保存用户到缓存
