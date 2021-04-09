@@ -147,7 +147,7 @@
 
 <script>
 
-    let urlBase = "/api/role/";
+    let urlBase = ROOT_URL + "/api/role/";
     new Vue({
         el: "#wrapper",
         data: {
@@ -174,19 +174,40 @@
                 this.isCollapse = !this.isCollapse;
             },
             logout() {
-                $.get("/api/user/logout");
-                sessionStorage.removeItem("user");
-                location.href = "/page/end/login.html";
+                $.ajax({
+                    url: ROOT_URL + "/api/user/logout/" + this.user.username,
+                    method: "GET",
+                    beforeSend: (request) => {
+                        request.setRequestHeader("token", this.user.token);
+                    }
+                }).then(res => {
+                    sessionStorage.removeItem("user");
+                    location.href = "/page/end/login.html";
+                })
             },
             loadTable() {
-                $.get(urlBase + "/page?pageNum=" + this.pageNum + "&pageSize=" + this.pageSize + "&name=" + this.search).then(res => {
+                $.ajax({
+                    url: urlBase + "/page?pageNum=" + this.pageNum + "&pageSize=" + this.pageSize + "&name=" + this.search,
+                    method: "GET",
+                    beforeSend: (request) => {
+                        request.setRequestHeader("token", this.user.token);
+                    }
+                }).then(res => {
                     this.tableData = res.data.records;
                     this.total = res.data.total;
-                });
-
-                $.get("/api/permission").then(res => {
-                    this.options = res.data;
                 })
+
+                $.ajax({
+                    url: ROOT_URL + "/api/permission",
+                    method: "GET",
+                    beforeSend: (request) => {
+                        request.setRequestHeader("token", this.user.token);
+                    }
+                }).then(res => {
+                    this.tableData = res.data.records;
+                    this.total = res.data.total;
+                })
+
             },
             exp() {
                 window.open(urlBase + "/export");
@@ -226,8 +247,15 @@
                     this.dialogFormVisible = false;
 
                     // 重新请求用户基础数据
-                    $.get("/api/user/detail/" + this.user.username).then(res => {
+                    $.ajax({
+                        url: ROOT_URL + "/user/detail/" + this.user.username,
+                        method: "GET",
+                        beforeSend: (request) => {
+                            request.setRequestHeader("token", this.user.token);
+                        }
+                    }).then(res => {
                         this.user = res.data;
+                        console.log(this.user)
                         sessionStorage.setItem("user", JSON.stringify(this.user));
                     })
                 })

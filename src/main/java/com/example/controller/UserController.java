@@ -1,9 +1,14 @@
 package com.example.controller;
 
 import cn.hutool.core.collection.CollUtil;
+import cn.hutool.core.date.DateField;
+import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.io.IoUtil;
+import cn.hutool.core.util.RuntimeUtil;
 import cn.hutool.poi.excel.ExcelUtil;
 import cn.hutool.poi.excel.ExcelWriter;
+import com.auth0.jwt.JWT;
+import com.auth0.jwt.algorithms.Algorithm;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
@@ -14,20 +19,18 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
 import javax.servlet.ServletOutputStream;
-import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.net.URLEncoder;
-import java.util.Collection;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 @RestController
 @RequestMapping("/api/user")
 public class UserController {
     public static final ConcurrentHashMap<String, User> MAP = new ConcurrentHashMap<>();
+    // 60分钟过期
+    public static final int EXPIRE_MIN = 60;
 
     @Resource
     private UserService userService;
@@ -37,15 +40,18 @@ public class UserController {
      * 登录
      *
      * @param user
-     * @param request
      * @return
      */
     @PostMapping("/login")
-    public Result<User> login(@RequestBody User user, HttpServletRequest request) {
+    public Result<User> login(@RequestBody User user) {
         User res = userService.login(user);
-        request.getSession().setAttribute("user", res);
-        MAP.put(res.getUsername(), res);
+        // 生成token
+        String token = JWT.create().withAudience(res.getUsername()).withExpiresAt(DateUtil.offset(new Date(), DateField.MINUTE, EXPIRE_MIN))
+                .sign(Algorithm.HMAC256(res.getPassword()));
+        res.setToken(token);
 
+        // 保存用户到缓存
+        MAP.put(res.getUsername(), res);
         return Result.success(res);
     }
 
@@ -53,31 +59,25 @@ public class UserController {
      * 注册
      *
      * @param user
-     * @param request
      * @return
      */
     @PostMapping("/register")
-    public Result<User> register(@RequestBody User user, HttpServletRequest request) {
+    public Result<User> register(@RequestBody User user) {
         if (user.getPassword() == null) {
             user.setPassword("123456");
         }
         User dbUser = userService.register(user);
-        request.getSession().setAttribute("user", user);
         return Result.success(dbUser);
     }
 
-    @GetMapping("/logout")
-    public Result<?> logout(HttpServletRequest request) {
-        User user = (User) request.getSession().getAttribute("user");
-        if (user != null) {
-            request.getSession().removeAttribute("user");
-            MAP.remove(user.getUsername());
-        }
+    @GetMapping("/logout/{username}")
+    public Result<?> logout(@PathVariable String username) {
+        MAP.remove(username);
         return Result.success();
     }
 
     @GetMapping("/online")
-    public Result<Collection<User>> online(HttpServletRequest request) {
+    public Result<Collection<User>> online() {
         return Result.success(MAP.values());
     }
 

@@ -181,14 +181,37 @@
             },
             logout() {
                 // 请求退出接口
-                $.get("/api/user/logout");
-                localStorage.removeItem("user");
-                location.href = "/page/end/login.html";
+                $.ajax({
+                    url: ROOT_URL + "/api/user/logout/" + this.user.username,
+                    method: "GET",
+                    beforeSend: (request) => {
+                        request.setRequestHeader("token", this.user.token);
+                    }
+                }).then(res => {
+                    sessionStorage.removeItem("user");
+                    location.href = "/page/end/login.html";
+                })
             },
             loadTable() {
-                $.get(urlBase + "/page?pageNum=" + this.pageNum + "&pageSize=" + this.pageSize + "&name=" + this.search).then(res => {
+                $.ajax({
+                    url: urlBase + "/page?pageNum=" + this.pageNum + "&pageSize=" + this.pageSize + "&name=" + this.search,
+                    method: "GET",
+                    beforeSend: (request) => {
+                        request.setRequestHeader("token", this.user.token);
+                    }
+                }).then(res => {
                     this.tableData = res.data.records;
                     this.total = res.data.total;
+                })
+
+                $.ajax({
+                    url: ROOT_URL + "/api/role",
+                    method: "GET",
+                    beforeSend: (request) => {
+                        request.setRequestHeader("token", this.user.token);
+                    }
+                }).then(res => {
+                    this.options = res.data;
                 })
 
                 $.get("/api/role").then(res => {

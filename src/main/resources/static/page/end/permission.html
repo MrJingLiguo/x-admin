@@ -111,7 +111,8 @@
                 <el-dialog title="权限信息" :visible.sync="dialogFormVisible" width="30%"
                            close-on-click-modal="false" close-on-press-escape="false" show-close="false">
                     <el-form :model="entity">
-                        <el-form-item v-if="item.prop !== 'id'" :label="item.label" label-width="100px" v-for="item in props">
+                        <el-form-item v-if="item.prop !== 'id'" :label="item.label" label-width="100px"
+                                      v-for="item in props">
                             <el-input v-model="entity[item.prop]" autocomplete="off" style="width: 80%"></el-input>
                         </el-form-item>
                     </el-form>
@@ -134,7 +135,7 @@
 
 <script>
 
-    let urlBase = "/api/permission/";
+    let urlBase = ROOT_URL + "/api/permission/";
     new Vue({
         el: "#wrapper",
         data: {
@@ -147,7 +148,8 @@
             entity: {},
             isCollapse: false,
             search: '',
-            props: [{"label":"","prop":"id"},{"label":"名称","prop":"name"},{"label":"描述","prop":"description"},{"label":"菜单路径","prop":"path"},{"label":"唯一标识","prop":"flag"}]
+            props: [{"label": "", "prop": "id"}, {"label": "名称", "prop": "name"}, {"label": "描述", "prop": "description"},
+                {"label": "菜单路径", "prop": "path"}, {"label": "唯一标识", "prop": "flag"}]
         },
         created() {
             this.user = sessionStorage.getItem("user") ? JSON.parse(sessionStorage.getItem("user")) : {};
@@ -160,12 +162,25 @@
                 this.isCollapse = !this.isCollapse;
             },
             logout() {
-                $.get("/api/user/logout");
-                sessionStorage.removeItem("user");
-                location.href = "/page/end/login.html";
+                $.ajax({
+                    url: ROOT_URL + "/api/user/logout/" + this.user.username,
+                    method: "GET",
+                    beforeSend: (request) => {
+                        request.setRequestHeader("token", this.user.token);
+                    }
+                }).then(res => {
+                    sessionStorage.removeItem("user");
+                    location.href = "/page/end/login.html";
+                })
             },
             loadTable() {
-                $.get(urlBase + "/page?pageNum=" + this.pageNum + "&pageSize=" + this.pageSize + "&name=" + this.search).then(res => {
+                $.ajax({
+                    url: urlBase + "/page?pageNum=" + this.pageNum + "&pageSize=" + this.pageSize + "&name=" + this.search,
+                    method: "GET",
+                    beforeSend: (request) => {
+                        request.setRequestHeader("token", this.user.token);
+                    }
+                }).then(res => {
                     this.tableData = res.data.records;
                     this.total = res.data.total;
                 })
@@ -191,7 +206,10 @@
                     url: urlBase,
                     type: type,
                     contentType: "application/json",
-                    data: JSON.stringify(this.entity)
+                    data: JSON.stringify(this.entity),
+                    beforeSend: (request) => {
+                        request.setRequestHeader("token", this.user.token);
+                    }
                 }).then(res => {
                     if (res.code === '0') {
                         this.$message({
@@ -223,9 +241,14 @@
                             type: "success"
                         });
                         this.loadTable();
-
                         // 重新请求用户基础数据
-                        $.get("/user/detail/" + this.user.username).then(res => {
+                        $.ajax({
+                            url: ROOT_URL + "/user/detail/" + this.user.username,
+                            method: "GET",
+                            beforeSend: (request) => {
+                                request.setRequestHeader("token", this.user.token);
+                            }
+                        }).then(res => {
                             this.user = res.data;
                             console.log(this.user)
                             sessionStorage.setItem("user", JSON.stringify(this.user));
