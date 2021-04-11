@@ -6,16 +6,18 @@ import com.auth0.jwt.JWTVerifier;
 import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.exceptions.JWTDecodeException;
 import com.auth0.jwt.exceptions.JWTVerificationException;
+import com.example.entity.Permission;
 import com.example.entity.User;
 import com.example.exception.CustomException;
 import com.example.service.UserService;
-import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.HandlerInterceptor;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.util.LinkedHashMap;
+import java.util.List;
 
 /**
  * 拦截器
@@ -48,6 +50,23 @@ public class AuthInterceptor implements HandlerInterceptor {
         } catch (JWTVerificationException e) {
             throw new CustomException("401", "token不合法, 请重新登录");
         }
+
+//        / 校验权限菜单
+        String servletPath = request.getServletPath();
+        List<Permission> permissions = user.getPermission();
+        boolean isOk = false;
+        for (Object obj : permissions) {
+            LinkedHashMap map = (LinkedHashMap) obj;
+            String flag = (String) map.get("flag");
+            if (servletPath.contains(flag)) {
+                isOk = true;
+                break;
+            }
+        }
+        if (!isOk) {
+            throw new CustomException("402", "权限验证失败");
+        }
+
         return true;
     }
 
